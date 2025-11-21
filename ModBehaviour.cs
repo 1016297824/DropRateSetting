@@ -21,11 +21,6 @@ namespace DropRateSetting
         /// Mod配置管理器实例
         /// </summary>
         private ModConfigDropRateManager? configManager;
-        
-        /// <summary>
-        /// 日志文件路径
-        /// </summary>
-        private static string logPath => Path.Combine(Path.GetDirectoryName(typeof(ModBehaviour).Assembly.Location), "DropRateSetting.log");
 
         /// <summary>
         /// 当组件启用时调用
@@ -34,7 +29,6 @@ namespace DropRateSetting
         private void OnEnable()
         {
             HarmonyLoad.HarmonyLoad.Load0Harmony();
-            LogMessage("[DropRateSetting] Mod已启用");
         }
 
         /// <summary>
@@ -47,18 +41,15 @@ namespace DropRateSetting
             try
             {
                 harmony.PatchAll();
-                LogMessage("[DropRateSetting] Harmony补丁已应用");
             }
-            catch (Exception ex)
+            catch
             {
-                LogMessage($"[DropRateSetting] Harmony补丁应用失败: {ex.Message}");
+                // 静默处理错误
             }
             
             // 初始化配置管理器
             GameObject configManagerObject = new GameObject("ModConfigDropRateManager");
             configManager = configManagerObject.AddComponent<ModConfigDropRateManager>();
-            
-            LogMessage($"[DropRateSetting] Mod已初始化，{ModConfigDropRateManager.GetVersionInfo()}");
         }
 
         /// <summary>
@@ -97,11 +88,10 @@ namespace DropRateSetting
             try
             {
                 harmony?.UnpatchAll("DropRateSetting");
-                LogMessage("[DropRateSetting] Harmony补丁已移除");
             }
-            catch (Exception ex)
+            catch
             {
-                LogMessage($"[DropRateSetting] Harmony补丁移除失败: {ex.Message}");
+                // 静默处理错误
             }
         }
         
@@ -114,25 +104,6 @@ namespace DropRateSetting
             if (configManager != null)
             {
                 Destroy(configManager.gameObject);
-            }
-            LogMessage("[DropRateSetting] Mod资源已清理");
-        }
-        
-        /// <summary>
-        /// 记录日志到本地文件
-        /// </summary>
-        /// <param name="message">要记录的消息</param>
-        private static void LogMessage(string message)
-        {
-            try
-            {
-                string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                string logEntry = $"[{timestamp}] {message}{Environment.NewLine}";
-                File.AppendAllText(logPath, logEntry);
-            }
-            catch
-            {
-                // 静默处理日志记录错误
             }
         }
     }
