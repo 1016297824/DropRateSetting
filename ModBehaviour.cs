@@ -21,6 +21,11 @@ namespace DropRateSetting
         /// Mod配置管理器实例
         /// </summary>
         private ModConfigDropRateManager? configManager;
+        
+        // 缓存反射字段以提高性能
+        private FieldInfo? lootBoxHighQualityChanceMultiplierField;
+        private FieldInfo? lootboxItemCountMultiplierField;
+        private bool fieldsCached = false;
 
         /// <summary>
         /// 当组件启用时调用
@@ -58,25 +63,49 @@ namespace DropRateSetting
         /// </summary>
         private void Update()
         {
+            // 检查是否启用了Mod功能
+            if (!ModConfigDropRateManager.IsModEnabled)
+                return;
+                
             // 检查LevelConfig.Instance是否可用
             if (LevelConfig.Instance != null)
             {
-                // 获取并修改高品质物品掉落概率字段
-                var lootBoxHighQualityChanceMultiplierField = typeof(LevelConfig)
-                    .GetField("lootBoxHighQualityChanceMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
+                // 缓存反射字段以提高性能
+                if (!fieldsCached)
+                {
+                    CacheReflectionFields();
+                }
+                
+                // 只有当字段不为null时才设置值，避免不必要的操作
+                // 设置高品质物品掉落概率
                 if (lootBoxHighQualityChanceMultiplierField != null)
                 {
                     lootBoxHighQualityChanceMultiplierField.SetValue(LevelConfig.Instance, (float)ModConfigDropRateManager.DropRateMultiplier);
                 }
 
-                // 获取并修改战利品箱物品数量字段
-                var lootboxItemCountMultiplierField = typeof(LevelConfig)
-                    .GetField("lootboxItemCountMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
+                // 设置战利品箱物品数量
                 if (lootboxItemCountMultiplierField != null)
                 {
                     lootboxItemCountMultiplierField.SetValue(LevelConfig.Instance, (float)ModConfigDropRateManager.RandomCountMultiplier);
                 }
             }
+        }
+        
+        /// <summary>
+        /// 缓存反射字段以提高性能
+        /// </summary>
+        private void CacheReflectionFields()
+        {
+            // 获取并缓存高品质物品掉落概率字段
+            lootBoxHighQualityChanceMultiplierField = typeof(LevelConfig)
+                .GetField("lootBoxHighQualityChanceMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            // 获取并缓存战利品箱物品数量字段
+            lootboxItemCountMultiplierField = typeof(LevelConfig)
+                .GetField("lootboxItemCountMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
+                
+            // 即使字段为null也标记为已缓存，避免重复尝试获取
+            fieldsCached = true;
         }
 
         /// <summary>
