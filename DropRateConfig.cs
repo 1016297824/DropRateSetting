@@ -28,7 +28,7 @@ namespace DropRateSetting
         /// <summary>
         /// 掉落率倍数（已弃用，仅用于向后兼容）
         /// 
-        /// 此字段不再使用，新的掉落率倍数存储在ModConfigDropRateManager.CurrentDropRateMultiplier中。
+        /// 此字段不再使用，新的掉落率倍数存储在ModConfigDropRateManager.SpawnChanceMultiplier和ModConfigDropRateManager.RandomCountMultiplier中。
         /// </summary>
         public float dropRateMultiplier = 2.0f;
         

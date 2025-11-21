@@ -67,23 +67,25 @@ namespace DropRateSetting
         /// </summary>
         private void Update()
         {
-            // 尝试直接修改LevelConfig中的掉落相关字段
-            /*
-            try
+            // 检查LevelConfig.Instance是否可用
+            if (LevelConfig.Instance != null)
             {
-                typeof(LevelConfig)
-                    .GetField("lootBoxHighQualityChanceMultiplier", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?.SetValue(LevelConfig.Instance, ModConfigDropRateManager.CurrentDropRateMultiplier);
-                    
-                typeof(LevelConfig)
-                    .GetField("lootboxItemCountMultiplier", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?.SetValue(LevelConfig.Instance, ModConfigDropRateManager.CurrentDropRateMultiplier);
+                // 获取并修改高品质物品掉落概率字段
+                var lootBoxHighQualityChanceMultiplierField = typeof(LevelConfig)
+                    .GetField("lootBoxHighQualityChanceMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (lootBoxHighQualityChanceMultiplierField != null)
+                {
+                    lootBoxHighQualityChanceMultiplierField.SetValue(LevelConfig.Instance, (float)ModConfigDropRateManager.DropRateMultiplier);
+                }
+
+                // 获取并修改战利品箱物品数量字段
+                var lootboxItemCountMultiplierField = typeof(LevelConfig)
+                    .GetField("lootboxItemCountMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (lootboxItemCountMultiplierField != null)
+                {
+                    lootboxItemCountMultiplierField.SetValue(LevelConfig.Instance, (float)ModConfigDropRateManager.RandomCountMultiplier);
+                }
             }
-            catch (Exception)
-            {
-                // 静默处理，因为这些字段可能不存在
-            }
-            */
         }
 
         /// <summary>

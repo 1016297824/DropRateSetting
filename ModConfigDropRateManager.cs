@@ -25,12 +25,32 @@ namespace DropRateSetting
         /// <summary>
         /// 掉落率倍数配置项的键名
         /// </summary>
-        private const string DROP_RATE_KEY = "DropRateMultiplier";
+        // private const string DROP_RATE_KEY = "DropRateMultiplier"; // 已弃用
+        
+        /// <summary>
+        /// 爆率配置项的键名
+        /// </summary>
+        private const string SPAWN_CHANCE_KEY = "SpawnChanceMultiplier";
+        
+        /// <summary>
+        /// 爆出个数配置项的键名
+        /// </summary>
+        private const string RANDOM_COUNT_KEY = "RandomCountMultiplier";
         
         /// <summary>
         /// 掉落率倍数配置项的描述信息
         /// </summary>
         private const string DROP_RATE_DESC = "掉落率倍数 (1.0 = 默认, 2.0 = 2倍掉落率)";
+        
+        /// <summary>
+        /// 爆率配置项的描述信息
+        /// </summary>
+        private const string SPAWN_CHANCE_DESC = "爆率 (控制高品质物品掉落概率)";
+        
+        /// <summary>
+        /// 爆出个数配置项的描述信息
+        /// </summary>
+        private const string RANDOM_COUNT_DESC = "爆出个数 (控制战利品箱物品数量)";
         
         /// <summary>
         /// 本地配置文件路径
@@ -45,7 +65,25 @@ namespace DropRateSetting
         /// <summary>
         /// 当前掉落率倍数
         /// </summary>
-        public static float CurrentDropRateMultiplier { get; private set; } = 9.0f;
+        // public static float CurrentDropRateMultiplier { get; private set; } = 2.0f; // 已弃用
+        
+        /// <summary>
+        /// 当前爆率倍数
+        /// </summary>
+        public static int DropRateMultiplier { get; private set; } = 1;
+        
+        /// <summary>
+        /// 当前爆出个数倍数
+        /// </summary>
+        public static int RandomCountMultiplier { get; private set; } = 1;
+        
+        // 添加ConfigData结构体定义
+        [Serializable]
+        private struct ConfigData
+        {
+            public int spawnChanceMultiplier;
+            public int randomCountMultiplier;
+        }
         
         /// <summary>
         /// 标记是否已经初始化过配置项
@@ -115,7 +153,8 @@ namespace DropRateSetting
             {
                 LogMessage("[DropRateSetting] ModConfig不可用，使用默认设置");
                 LoadLocalConfig();
-                DropRateModifier.DropRateMultiplier = CurrentDropRateMultiplier;
+                DropRateModifier.SpawnChanceMultiplier = DropRateMultiplier;
+                DropRateModifier.RandomCountMultiplier = RandomCountMultiplier;
                 return;
             }
             
@@ -129,14 +168,24 @@ namespace DropRateSetting
             // 注册配置项变更事件
             ModConfigAPI.SafeAddOnOptionsChangedDelegate(OnConfigChanged);
             
-            // 添加滑条输入框配置项
+            // 添加爆率滑条输入框配置项（在上面）
             ModConfigAPI.SafeAddInputWithSlider(
                 MOD_NAME,
-                DROP_RATE_KEY,
-                DROP_RATE_DESC,
-                typeof(float),
-                2.0f, // 默认值
-                new Vector2(1.0f, 10.0f) // 滑条范围
+                SPAWN_CHANCE_KEY,
+                SPAWN_CHANCE_DESC,
+                typeof(int),
+                1, // 默认值
+                new Vector2(1, 100) // 滑条范围
+            );
+            
+            // 添加爆出个数滑条输入框配置项（在下面）
+            ModConfigAPI.SafeAddInputWithSlider(
+                MOD_NAME,
+                RANDOM_COUNT_KEY,
+                RANDOM_COUNT_DESC,
+                typeof(int),
+                1, // 默认值
+                new Vector2(1, 5) // 滑条范围
             );
             
             isConfigInitialized = true;
@@ -152,7 +201,7 @@ namespace DropRateSetting
         /// <param name="key">变更的配置项键名</param>
         private void OnConfigChanged(string key)
         {
-            if (key == $"{MOD_NAME}_{DROP_RATE_KEY}")
+            if (key == $"{MOD_NAME}_{SPAWN_CHANCE_KEY}" || key == $"{MOD_NAME}_{RANDOM_COUNT_KEY}")
             {
                 LoadConfig();
                 SaveLocalConfig();
@@ -166,14 +215,24 @@ namespace DropRateSetting
         {
             if (ModConfigAPI.IsAvailable())
             {
-                float previousMultiplier = CurrentDropRateMultiplier;
-                CurrentDropRateMultiplier = ModConfigAPI.SafeLoad<float>(MOD_NAME, DROP_RATE_KEY, 2.0f);
-                DropRateModifier.DropRateMultiplier = CurrentDropRateMultiplier;
+                float previousSpawnChance = DropRateMultiplier;
+                int previousRandomCount = RandomCountMultiplier;
+                
+                DropRateMultiplier = ModConfigAPI.SafeLoad<int>(MOD_NAME, SPAWN_CHANCE_KEY, 10);
+                RandomCountMultiplier = ModConfigAPI.SafeLoad<int>(MOD_NAME, RANDOM_COUNT_KEY, 1);
+                
+                DropRateModifier.SpawnChanceMultiplier = DropRateMultiplier;
+                DropRateModifier.RandomCountMultiplier = RandomCountMultiplier;
                 
                 // 只有当值真正改变时才记录日志
-                if (Math.Abs(previousMultiplier - CurrentDropRateMultiplier) > 0.01f)
+                if (previousSpawnChance != DropRateMultiplier)
                 {
-                    LogMessage($"[DropRateSetting] 掉落率倍数已更新为: {CurrentDropRateMultiplier:F2}");
+                    LogMessage($"[DropRateSetting] 爆率已更新为: {DropRateMultiplier}");
+                }
+                
+                if (previousRandomCount != RandomCountMultiplier)
+                {
+                    LogMessage($"[DropRateSetting] 爆出个数已更新为: {RandomCountMultiplier}");
                 }
             }
         }
@@ -185,7 +244,10 @@ namespace DropRateSetting
         {
             try
             {
-                string json = JsonUtility.ToJson(new ConfigData { dropRateMultiplier = CurrentDropRateMultiplier }, true);
+                string json = JsonUtility.ToJson(new ConfigData { 
+                    spawnChanceMultiplier = DropRateMultiplier,
+                    randomCountMultiplier = RandomCountMultiplier
+                }, true);
                 File.WriteAllText(persistentConfigPath, json);
                 // 配置已保存到本地文件，不显示冒泡框
             }
@@ -206,9 +268,11 @@ namespace DropRateSetting
                 {
                     string json = File.ReadAllText(persistentConfigPath);
                     ConfigData configData = JsonUtility.FromJson<ConfigData>(json);
-                    CurrentDropRateMultiplier = configData.dropRateMultiplier;
-                    DropRateModifier.DropRateMultiplier = CurrentDropRateMultiplier;
-                    LogMessage($"[DropRateSetting] 从本地文件加载配置: {CurrentDropRateMultiplier:F2}");
+                    DropRateMultiplier = configData.spawnChanceMultiplier;
+                    RandomCountMultiplier = configData.randomCountMultiplier;
+                    DropRateModifier.SpawnChanceMultiplier = DropRateMultiplier;
+                    DropRateModifier.RandomCountMultiplier = RandomCountMultiplier;
+                    LogMessage($"[DropRateSetting] 从本地文件加载配置: 爆率={DropRateMultiplier}, 爆出个数={RandomCountMultiplier}");
                 }
             }
             catch (Exception ex)
@@ -246,15 +310,6 @@ namespace DropRateSetting
             {
                 // 静默处理日志记录错误
             }
-        }
-        
-        /// <summary>
-        /// 本地配置数据结构
-        /// </summary>
-        [System.Serializable]
-        private class ConfigData
-        {
-            public float dropRateMultiplier = 2.0f;
         }
     }
 }
