@@ -8,8 +8,8 @@ using UnityEngine.SceneManagement; // 添加SceneManager引用
 namespace DropRateSetting
 {
     /// <summary>
-    /// Mod主类
-    /// 负责初始化Harmony补丁和配置系统
+    /// 掉落率设置Mod主类
+    /// 负责初始化Harmony补丁系统和配置管理器
     /// </summary>
     public class ModBehaviour : Duckov.Modding.ModBehaviour
     {
@@ -81,7 +81,6 @@ namespace DropRateSetting
         {
             // 场景加载完成后，重置场景切换标志
             isSwitchingScene = false;
-            WriteDebugLog($"[DropRateSetting] 场景加载完成: {scene.name}, 模式: {mode}");
         }
 
         /// <summary>
@@ -91,7 +90,6 @@ namespace DropRateSetting
         {
             // 标记场景正在切换
             isSwitchingScene = true;
-            WriteDebugLog($"[DropRateSetting] 场景开始卸载: {scene.name}");
         }
 
         /// <summary>
@@ -159,11 +157,6 @@ namespace DropRateSetting
                 
             if (shouldUpdate)
             {
-                WriteDebugLog($"[DropRateSetting] 检测到配置变化 - " +
-                         $"爆率: {lastDropRateMultiplier} -> {ModConfigDropRateManager.DropRateMultiplier}, " +
-                         $"数量: {lastRandomCountMultiplier} -> {ModConfigDropRateManager.RandomCountMultiplier}, " +
-                         $"启用: {lastIsModEnabled} -> {ModConfigDropRateManager.IsModEnabled}");
-                
                 // 设置延迟刷新标志
                 pendingRespawn = true;
                 respawnTimer = 0f;
@@ -197,95 +190,20 @@ namespace DropRateSetting
         }
         
         /// <summary>
-        /// 将调试日志写入文件
-        /// </summary>
-        /// <param name="message">日志消息</param>
-        private void WriteDebugLog(string message)
-        {
-            try
-            {
-                // 获取DLL所在目录
-                string dllPath = Assembly.GetExecutingAssembly().Location;
-                string logDirectory = Path.GetDirectoryName(dllPath);
-                string logFilePath = Path.Combine(logDirectory, "DropRateSetting.log");
-                
-                // 创建日志内容
-                string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}" + Environment.NewLine;
-                
-                // 写入日志文件
-                File.AppendAllText(logFilePath, logEntry);
-            }
-            catch (Exception)
-            {
-                // 静默处理错误，避免日志写入错误影响主逻辑
-            }
-        }
-        
-        /// <summary>
-        /// 将爆率更新写入日志文件
-        /// </summary>
-        /// <param name="dropRate">高品质掉落率</param>
-        /// <param name="itemCount">物品数量</param>
-        private void WriteDropRateLog(float dropRate, float itemCount)
-        {
-            try
-            {
-                // 获取DLL所在目录
-                string dllPath = Assembly.GetExecutingAssembly().Location;
-                string logDirectory = Path.GetDirectoryName(dllPath);
-                // 统一使用统一日志文件
-                string logFilePath = Path.Combine(logDirectory, "DropRateSetting.log");
-                
-                // 创建日志内容
-                string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " +
-                                $"爆率更新 - 高品质掉落率: {dropRate}, 物品数量: {itemCount}" + 
-                                Environment.NewLine;
-                
-                // 写入日志文件
-                File.AppendAllText(logFilePath, logEntry);
-            }
-            catch (Exception ex)
-            {
-                WriteDebugLog($"[DropRateSetting] 写入爆率日志文件时出错: {ex.Message}");
-            }
-        }
-        
-        /// <summary>
         /// 缓存反射字段以提高性能
         /// </summary>
         private void CacheReflectionFields()
         {
-            WriteDebugLog($"[DropRateSetting] 开始缓存反射字段");
-            
             // 获取并缓存高品质物品掉落概率字段
             lootBoxHighQualityChanceMultiplierField = typeof(LevelConfig)
                 .GetField("lootBoxHighQualityChanceMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
             
-            if (lootBoxHighQualityChanceMultiplierField != null)
-            {
-                WriteDebugLog($"[DropRateSetting] 成功获取lootBoxHighQualityChanceMultiplierField");
-            }
-            else
-            {
-                WriteDebugLog($"[DropRateSetting] 无法获取lootBoxHighQualityChanceMultiplierField");
-            }
-
             // 获取并缓存战利品箱物品数量字段
             lootboxItemCountMultiplierField = typeof(LevelConfig)
                 .GetField("lootboxItemCountMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
                 
-            if (lootboxItemCountMultiplierField != null)
-            {
-                WriteDebugLog($"[DropRateSetting] 成功获取lootboxItemCountMultiplierField");
-            }
-            else
-            {
-                WriteDebugLog($"[DropRateSetting] 无法获取lootboxItemCountMultiplierField");
-            }
-                
             // 即使字段为null也标记为已缓存，避免重复尝试获取
             fieldsCached = true;
-            WriteDebugLog($"[DropRateSetting] 反射字段缓存完成");
         }
 
         /// <summary>
