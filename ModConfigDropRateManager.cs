@@ -151,20 +151,26 @@ namespace DropRateSetting
         /// </summary>
         private void InitializeConfig()
         {
+            WriteDebugLog($"[DropRateSetting] 开始初始化配置");
+            
             // 先尝试从本地配置加载，确保用户设置被保留
             LoadLocalConfig();
             
             // 检查ModConfig是否可用
             if (!ModConfigAPI.IsAvailable())
             {
+                WriteDebugLog($"[DropRateSetting] ModConfig不可用");
                 // 即使ModConfig不可用，也要确保生成初始配置文件
                 EnsureInitialConfigFile();
                 return;
             }
             
+            WriteDebugLog($"[DropRateSetting] ModConfig可用");
+            
             // 避免重复初始化配置项
             if (isConfigInitialized)
             {
+                WriteDebugLog($"[DropRateSetting] 配置已初始化，跳过重复初始化");
                 return;
             }
             
@@ -205,6 +211,8 @@ namespace DropRateSetting
             previousDropRateMultiplier = DropRateMultiplier;
             previousRandomCountMultiplier = RandomCountMultiplier;
             previousIsModEnabled = IsModEnabled;
+            
+            WriteDebugLog($"[DropRateSetting] 配置初始化完成 - 爆率: {DropRateMultiplier}, 数量: {RandomCountMultiplier}, 启用: {IsModEnabled}");
         }
         
         /// <summary>
@@ -216,8 +224,7 @@ namespace DropRateSetting
             if (!File.Exists(persistentConfigPath))
             {
                 SaveLocalConfig();
-                // 可以添加日志信息用于调试
-                // Debug.Log($"[DropRateSetting] 已创建初始配置文件: {persistentConfigPath}");
+                WriteDebugLog($"[DropRateSetting] 已创建初始配置文件: {persistentConfigPath}");
             }
         }
         
@@ -230,6 +237,8 @@ namespace DropRateSetting
         {
             if (key == FULL_SPAWN_CHANCE_KEY || key == FULL_RANDOM_COUNT_KEY || key == FULL_ENABLE_MOD_KEY)
             {
+                WriteDebugLog($"[DropRateSetting] 检测到配置变更 - 键名: {key}");
+                
                 LoadConfig();
                 
                 // 只有在值真正发生变化时才保存到本地文件
@@ -237,6 +246,10 @@ namespace DropRateSetting
                     RandomCountMultiplier != previousRandomCountMultiplier || 
                     IsModEnabled != previousIsModEnabled)
                 {
+                    WriteDebugLog($"[DropRateSetting] 配置值发生变化 - 爆率: {previousDropRateMultiplier} -> {DropRateMultiplier}, " +
+                                 $"数量: {previousRandomCountMultiplier} -> {RandomCountMultiplier}, " +
+                                 $"启用: {previousIsModEnabled} -> {IsModEnabled}");
+                                 
                     SaveLocalConfig();
                     previousDropRateMultiplier = DropRateMultiplier;
                     previousRandomCountMultiplier = RandomCountMultiplier;
@@ -267,6 +280,10 @@ namespace DropRateSetting
                     RandomCountMultiplier != previousRandomCount || 
                     IsModEnabled != previousEnabled)
                 {
+                    WriteDebugLog($"[DropRateSetting] 从ModConfig加载配置 - 爆率: {previousSpawnChance} -> {DropRateMultiplier}, " +
+                                 $"数量: {previousRandomCount} -> {RandomCountMultiplier}, " +
+                                 $"启用: {previousEnabled} -> {IsModEnabled}");
+                                 
                     SaveLocalConfig();
                     previousDropRateMultiplier = DropRateMultiplier;
                     previousRandomCountMultiplier = RandomCountMultiplier;
@@ -295,11 +312,12 @@ namespace DropRateSetting
                     isModEnabled = IsModEnabled
                 }, true);
                 File.WriteAllText(persistentConfigPath, json);
+                
+                WriteDebugLog($"[DropRateSetting] 配置已保存到本地文件 - 爆率: {DropRateMultiplier}, 数量: {RandomCountMultiplier}, 启用: {IsModEnabled}");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // 静默处理错误
-                // Debug.Log($"[DropRateSetting] 保存配置文件失败: {ex.Message}");
+                WriteDebugLog($"[DropRateSetting] 保存配置文件失败: {ex.Message}");
             }
         }
         
@@ -317,16 +335,19 @@ namespace DropRateSetting
                     DropRateMultiplier = configData.spawnChanceMultiplier;
                     RandomCountMultiplier = configData.randomCountMultiplier;
                     IsModEnabled = configData.isModEnabled;
+                    
+                    WriteDebugLog($"[DropRateSetting] 从本地文件加载配置 - 爆率: {DropRateMultiplier}, 数量: {RandomCountMultiplier}, 启用: {IsModEnabled}");
                 }
                 else
                 {
+                    WriteDebugLog($"[DropRateSetting] 本地配置文件不存在");
                     // 如果配置文件不存在，确保生成初始配置文件
                     EnsureInitialConfigFile();
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // 静默处理错误
+                WriteDebugLog($"[DropRateSetting] 加载本地配置文件失败: {ex.Message}");
                 // 如果加载失败，确保生成初始配置文件
                 EnsureInitialConfigFile();
             }
@@ -345,6 +366,31 @@ namespace DropRateSetting
                 return $"ModConfig版本: {ModConfigAPI.GetVersionInfo()}";
             }
             return "ModConfig不可用";
+        }
+        
+        /// <summary>
+        /// 将调试日志写入文件
+        /// </summary>
+        /// <param name="message">日志消息</param>
+        private static void WriteDebugLog(string message)
+        {
+            try
+            {
+                // 获取DLL所在目录
+                string dllPath = Assembly.GetExecutingAssembly().Location;
+                string logDirectory = Path.GetDirectoryName(dllPath);
+                string logFilePath = Path.Combine(logDirectory, "DropRateSetting.log");
+                
+                // 创建日志内容
+                string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}" + Environment.NewLine;
+                
+                // 写入日志文件
+                File.AppendAllText(logFilePath, logEntry);
+            }
+            catch (Exception)
+            {
+                // 静默处理错误，避免日志写入错误影响主逻辑
+            }
         }
     }
 }

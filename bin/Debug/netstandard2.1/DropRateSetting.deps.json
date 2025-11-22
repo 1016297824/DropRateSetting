@@ -27,7 +27,6 @@
           "DOTweenPro": "1.0.0.0",
           "DOTweenPro.Scripts": "0.0.0.0",
           "Drawing": "0.0.0.0",
-          "DropRateSetting": "1.0.0.0",
           "EasySave3": "0.0.0.0",
           "ECM2": "0.0.0.0",
           "Eflatun.SceneReference": "0.0.0.0",
@@ -357,14 +356,6 @@
           "Drawing.dll": {
             "assemblyVersion": "0.0.0.0",
             "fileVersion": "0.0.0.0"
-          }
-        }
-      },
-      "DropRateSetting/1.0.0.0": {
-        "runtime": {
-          "DropRateSetting.dll": {
-            "assemblyVersion": "1.0.0.0",
-            "fileVersion": "1.0.0.0"
           }
         }
       },
@@ -1926,11 +1917,6 @@
       "sha512": ""
     },
     "Drawing/0.0.0.0": {
-      "type": "reference",
-      "serviceable": false,
-      "sha512": ""
-    },
-    "DropRateSetting/1.0.0.0": {
       "type": "reference",
       "serviceable": false,
       "sha512": ""

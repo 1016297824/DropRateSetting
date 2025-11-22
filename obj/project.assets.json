@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\Workspace\\Rider\\DropRateSetting\\DropRateSetting\\DropRateSetting.csproj",
+      "projectUniqueName": "E:\\Workspace\\Rider\\search\\DropRateSetting\\DropRateSetting.csproj",
       "projectName": "DropRateSetting",
-      "projectPath": "E:\\Workspace\\Rider\\DropRateSetting\\DropRateSetting\\DropRateSetting.csproj",
+      "projectPath": "E:\\Workspace\\Rider\\search\\DropRateSetting\\DropRateSetting.csproj",
       "packagesPath": "C:\\Users\\ZhangKun\\.nuget\\packages\\",
-      "outputPath": "E:\\Workspace\\Rider\\DropRateSetting\\DropRateSetting\\obj\\",
+      "outputPath": "E:\\Workspace\\Rider\\search\\DropRateSetting\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\ZhangKun\\AppData\\Roaming\\NuGet\\NuGet.Config"

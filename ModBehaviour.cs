@@ -23,9 +23,19 @@ namespace DropRateSetting
         private ModConfigDropRateManager? configManager;
         
         // 缓存反射字段以提高性能
-        private FieldInfo? lootBoxHighQualityChanceMultiplierField;
-        private FieldInfo? lootboxItemCountMultiplierField;
+        private static FieldInfo? lootBoxHighQualityChanceMultiplierField;
+        private static FieldInfo? lootboxItemCountMultiplierField;
         private bool fieldsCached = false;
+        
+        // 保存上一次的配置值用于比较
+        private int lastDropRateMultiplier = 1;
+        private int lastRandomCountMultiplier = 1;
+        private bool lastIsModEnabled = false;
+        
+        // 添加延迟刷新相关变量
+        private bool pendingRespawn = false;
+        private float respawnDelay = 0.1f; // 0.1秒延迟
+        private float respawnTimer = 0f;
 
         /// <summary>
         /// 当组件启用时调用
@@ -89,6 +99,112 @@ namespace DropRateSetting
                     lootboxItemCountMultiplierField.SetValue(LevelConfig.Instance, (float)ModConfigDropRateManager.RandomCountMultiplier);
                 }
             }
+            
+            // 检查配置是否发生变化
+            CheckForConfigChanges();
+            
+            // 处理延迟刷新
+            HandlePendingRespawn();
+        }
+        
+        /// <summary>
+        /// 检查配置是否有变化
+        /// </summary>
+        private void CheckForConfigChanges()
+        {
+            // 检查是否需要更新设置
+            bool shouldUpdate = 
+                lastDropRateMultiplier != ModConfigDropRateManager.DropRateMultiplier ||
+                lastRandomCountMultiplier != ModConfigDropRateManager.RandomCountMultiplier ||
+                lastIsModEnabled != ModConfigDropRateManager.IsModEnabled;
+                
+            if (shouldUpdate)
+            {
+                WriteDebugLog($"[DropRateSetting] 检测到配置变化 - " +
+                         $"爆率: {lastDropRateMultiplier} -> {ModConfigDropRateManager.DropRateMultiplier}, " +
+                         $"数量: {lastRandomCountMultiplier} -> {ModConfigDropRateManager.RandomCountMultiplier}, " +
+                         $"启用: {lastIsModEnabled} -> {ModConfigDropRateManager.IsModEnabled}");
+                
+                // 设置延迟刷新标志
+                pendingRespawn = true;
+                respawnTimer = 0f;
+                
+                // 更新跟踪变量
+                lastDropRateMultiplier = ModConfigDropRateManager.DropRateMultiplier;
+                lastRandomCountMultiplier = ModConfigDropRateManager.RandomCountMultiplier;
+                lastIsModEnabled = ModConfigDropRateManager.IsModEnabled;
+            }
+        }
+        
+        /// <summary>
+        /// 处理延迟刷新
+        /// </summary>
+        private void HandlePendingRespawn()
+        {
+            if (pendingRespawn)
+            {
+                respawnTimer += Time.deltaTime;
+                if (respawnTimer >= respawnDelay)
+                {
+                    // 重新生成战利品箱子
+                    LootSpawnerPatch.RespawnLoot();
+                    pendingRespawn = false;
+                }
+            }
+        }
+        
+        /// <summary>
+        /// 将调试日志写入文件
+        /// </summary>
+        /// <param name="message">日志消息</param>
+        private void WriteDebugLog(string message)
+        {
+            try
+            {
+                // 获取DLL所在目录
+                string dllPath = Assembly.GetExecutingAssembly().Location;
+                string logDirectory = Path.GetDirectoryName(dllPath);
+                string logFilePath = Path.Combine(logDirectory, "DropRateSetting.log");
+                
+                // 创建日志内容
+                string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {message}" + Environment.NewLine;
+                
+                // 写入日志文件
+                File.AppendAllText(logFilePath, logEntry);
+            }
+            catch (Exception)
+            {
+                // 静默处理错误，避免日志写入错误影响主逻辑
+            }
+        }
+        
+        /// <summary>
+        /// 将爆率更新写入日志文件
+        /// </summary>
+        /// <param name="dropRate">高品质掉落率</param>
+        /// <param name="itemCount">物品数量</param>
+        private void WriteDropRateLog(float dropRate, float itemCount)
+        {
+            try
+            {
+                // 获取DLL所在目录
+                string dllPath = Assembly.GetExecutingAssembly().Location;
+                string logDirectory = Path.GetDirectoryName(dllPath);
+                // 统一使用统一日志文件
+                string logFilePath = Path.Combine(logDirectory, "DropRateSetting.log");
+                
+                // 创建日志内容
+                string logEntry = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] " +
+                                $"爆率更新 - 高品质掉落率: {dropRate}, 物品数量: {itemCount}" + 
+                                Environment.NewLine;
+                
+                // 写入日志文件
+                File.AppendAllText(logFilePath, logEntry);
+            }
+            catch (Exception ex)
+            {
+                WriteDebugLog($"[DropRateSetting] 写入爆率日志文件时出错: {ex.Message}");
+            }
         }
         
         /// <summary>
@@ -96,16 +212,37 @@ namespace DropRateSetting
         /// </summary>
         private void CacheReflectionFields()
         {
+            WriteDebugLog($"[DropRateSetting] 开始缓存反射字段");
+            
             // 获取并缓存高品质物品掉落概率字段
             lootBoxHighQualityChanceMultiplierField = typeof(LevelConfig)
                 .GetField("lootBoxHighQualityChanceMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
+            
+            if (lootBoxHighQualityChanceMultiplierField != null)
+            {
+                WriteDebugLog($"[DropRateSetting] 成功获取lootBoxHighQualityChanceMultiplierField");
+            }
+            else
+            {
+                WriteDebugLog($"[DropRateSetting] 无法获取lootBoxHighQualityChanceMultiplierField");
+            }
 
             // 获取并缓存战利品箱物品数量字段
             lootboxItemCountMultiplierField = typeof(LevelConfig)
                 .GetField("lootboxItemCountMultiplier", BindingFlags.Instance | BindingFlags.NonPublic);
                 
+            if (lootboxItemCountMultiplierField != null)
+            {
+                WriteDebugLog($"[DropRateSetting] 成功获取lootboxItemCountMultiplierField");
+            }
+            else
+            {
+                WriteDebugLog($"[DropRateSetting] 无法获取lootboxItemCountMultiplierField");
+            }
+                
             // 即使字段为null也标记为已缓存，避免重复尝试获取
             fieldsCached = true;
+            WriteDebugLog($"[DropRateSetting] 反射字段缓存完成");
         }
 
         /// <summary>
