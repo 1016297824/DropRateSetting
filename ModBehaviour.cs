@@ -3,6 +3,7 @@ using HarmonyLib;
 using UnityEngine;
 using System.IO;
 using System.Reflection;
+using UnityEngine.SceneManagement; // 添加SceneManager引用
 
 namespace DropRateSetting
 {
@@ -36,6 +37,9 @@ namespace DropRateSetting
         private bool pendingRespawn = false;
         private float respawnDelay = 0.1f; // 0.1秒延迟
         private float respawnTimer = 0f;
+        
+        // 添加场景切换相关变量
+        private bool isSwitchingScene = false;
 
         /// <summary>
         /// 当组件启用时调用
@@ -44,6 +48,9 @@ namespace DropRateSetting
         private void OnEnable()
         {
             HarmonyLoad.HarmonyLoad.Load0Harmony();
+            // 注册场景切换事件
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
         /// <summary>
@@ -68,11 +75,43 @@ namespace DropRateSetting
         }
 
         /// <summary>
+        /// 场景加载完成时调用
+        /// </summary>
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // 场景加载完成后，重置场景切换标志
+            isSwitchingScene = false;
+            WriteDebugLog($"[DropRateSetting] 场景加载完成: {scene.name}, 模式: {mode}");
+        }
+
+        /// <summary>
+        /// 当场景开始卸载时调用
+        /// </summary>
+        private void OnSceneUnloaded(Scene scene)
+        {
+            // 标记场景正在切换
+            isSwitchingScene = true;
+            WriteDebugLog($"[DropRateSetting] 场景开始卸载: {scene.name}");
+        }
+
+        /// <summary>
         /// 每帧更新时调用
         /// 可用于处理实时逻辑
         /// </summary>
         private void Update()
         {
+            // 检查是否正在切换场景
+            if (isSwitchingScene)
+                return;
+                
+            // 检查是否正在进行重新生成操作
+            if (LootSpawnerPatch.IsRespawning())
+                return;
+                
+            // 检查是否正在切换场景（通过LootSpawnerPatch检查）
+            if (LootSpawnerPatch.IsSceneChanging())
+                return;
+                
             // 检查是否启用了Mod功能
             if (!ModConfigDropRateManager.IsModEnabled)
                 return;
@@ -141,14 +180,18 @@ namespace DropRateSetting
         /// </summary>
         private void HandlePendingRespawn()
         {
-            if (pendingRespawn)
+            if (pendingRespawn && !isSwitchingScene && !LootSpawnerPatch.IsRespawning() && !LootSpawnerPatch.IsSceneChanging())
             {
                 respawnTimer += Time.deltaTime;
                 if (respawnTimer >= respawnDelay)
                 {
-                    // 重新生成战利品箱子
-                    LootSpawnerPatch.RespawnLoot();
-                    pendingRespawn = false;
+                    // 检查是否还有待处理的重新生成操作
+                    if (!LootSpawnerPatch.HasPendingRespawns())
+                    {
+                        // 重新生成战利品箱子
+                        LootSpawnerPatch.RespawnLoot();
+                        pendingRespawn = false;
+                    }
                 }
             }
         }
@@ -253,6 +296,9 @@ namespace DropRateSetting
         {
             try
             {
+                // 取消注册场景切换事件
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+                SceneManager.sceneUnloaded -= OnSceneUnloaded;
                 harmony?.UnpatchAll("DropRateSetting");
             }
             catch
@@ -267,6 +313,10 @@ namespace DropRateSetting
         /// </summary>
         private void OnDestroy()
         {
+            // 取消注册场景切换事件
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
+            
             if (configManager != null)
             {
                 Destroy(configManager.gameObject);
