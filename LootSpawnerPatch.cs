@@ -46,8 +46,8 @@ namespace DropRateSetting
                 pendingRespawns = 0;
                 
                 // 获取当前的掉率和数量配置
-                int dropRateMultiplier = ModConfigDropRateManager.DropRateMultiplier;
-                int randomCountMultiplier = ModConfigDropRateManager.RandomCountMultiplier;
+                float dropRateMultiplier = ModConfigDropRateManager.DropRateMultiplier;
+                float randomCountMultiplier = ModConfigDropRateManager.RandomCountMultiplier;
                 bool isModEnabled = ModConfigDropRateManager.IsModEnabled;
                 
                 // 检查是否在基地场景，基地场景中不重新生成战利品

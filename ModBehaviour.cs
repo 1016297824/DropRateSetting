@@ -29,8 +29,8 @@ namespace DropRateSetting
         private bool fieldsCached = false;
         
         // 保存上一次的配置值用于比较
-        private int lastDropRateMultiplier = 1;
-        private int lastRandomCountMultiplier = 1;
+        private float lastDropRateMultiplier = 1.0f;
+        private float lastRandomCountMultiplier = 1.0f;
         private bool lastIsModEnabled = false;
         private bool lastRefreshLoot = false;
         
@@ -99,6 +99,10 @@ namespace DropRateSetting
         /// </summary>
         private void Update()
         {
+            // 检查是否启用了Mod功能
+            if (!ModConfigDropRateManager.IsModEnabled)
+                return;
+                
             // 检查是否正在切换场景
             if (isSwitchingScene)
                 return;
@@ -109,10 +113,6 @@ namespace DropRateSetting
                 
             // 检查是否正在切换场景（通过LootSpawnerPatch检查）
             if (LootSpawnerPatch.IsSceneChanging())
-                return;
-                
-            // 检查是否启用了Mod功能
-            if (!ModConfigDropRateManager.IsModEnabled)
                 return;
                 
             // 检查LevelConfig.Instance是否可用
@@ -128,13 +128,13 @@ namespace DropRateSetting
                 // 设置高品质物品掉落概率
                 if (lootBoxHighQualityChanceMultiplierField != null)
                 {
-                    lootBoxHighQualityChanceMultiplierField.SetValue(LevelConfig.Instance, (float)ModConfigDropRateManager.DropRateMultiplier);
+                    lootBoxHighQualityChanceMultiplierField.SetValue(LevelConfig.Instance, ModConfigDropRateManager.DropRateMultiplier);
                 }
 
                 // 设置战利品箱物品数量
                 if (lootboxItemCountMultiplierField != null)
                 {
-                    lootboxItemCountMultiplierField.SetValue(LevelConfig.Instance, (float)ModConfigDropRateManager.RandomCountMultiplier);
+                    lootboxItemCountMultiplierField.SetValue(LevelConfig.Instance, ModConfigDropRateManager.RandomCountMultiplier);
                 }
             }
             
@@ -152,8 +152,8 @@ namespace DropRateSetting
         {
             // 检查是否需要更新设置
             bool shouldUpdate = 
-                lastDropRateMultiplier != ModConfigDropRateManager.DropRateMultiplier ||
-                lastRandomCountMultiplier != ModConfigDropRateManager.RandomCountMultiplier ||
+                Math.Abs(lastDropRateMultiplier - ModConfigDropRateManager.DropRateMultiplier) > 0.001f ||
+                Math.Abs(lastRandomCountMultiplier - ModConfigDropRateManager.RandomCountMultiplier) > 0.001f ||
                 lastIsModEnabled != ModConfigDropRateManager.IsModEnabled ||
                 lastRefreshLoot != ModConfigDropRateManager.RefreshLoot;
                 
