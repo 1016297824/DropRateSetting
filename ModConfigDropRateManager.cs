@@ -37,11 +37,16 @@ namespace DropRateSetting
         /// 启用Mod功能的配置项键名
         /// </summary>
         private const string ENABLE_MOD_KEY = "EnableMod";
+        /// <summary>
+        /// 即时刷新按钮的配置项键名
+        /// </summary>
+        private const string REFRESH_LOOT_KEY = "RefreshLoot";
         
         // 预拼接的配置键名，避免重复字符串拼接
         private static readonly string FULL_SPAWN_CHANCE_KEY = $"{MOD_NAME}_{SPAWN_CHANCE_KEY}";
         private static readonly string FULL_RANDOM_COUNT_KEY = $"{MOD_NAME}_{RANDOM_COUNT_KEY}";
         private static readonly string FULL_ENABLE_MOD_KEY = $"{MOD_NAME}_{ENABLE_MOD_KEY}";
+        private static readonly string FULL_REFRESH_LOOT_KEY = $"{MOD_NAME}_{REFRESH_LOOT_KEY}";
         
         // 配置项描述信息常量
         /// <summary>
@@ -56,6 +61,11 @@ namespace DropRateSetting
         /// 启用Mod功能的配置项描述信息
         /// </summary>
         private const string ENABLE_MOD_DESC = "是否启用本mod (防止与其它修改掉率mod冲突)";
+        
+        /// <summary>
+        /// 即时刷新按钮的配置项描述信息
+        /// </summary>
+        private const string REFRESH_LOOT_DESC = "爆率修改后即时刷新战利品箱";
         
         /// <summary>
         /// 本地配置文件路径
@@ -77,10 +87,16 @@ namespace DropRateSetting
         /// </summary>
         public static bool IsModEnabled { get; private set; } = false;
         
+        /// <summary>
+        /// 即时刷新按钮状态
+        /// </summary>
+        public static bool RefreshLoot { get; private set; } = false;
+        
         // 保存上一次的值用于比较
         private static int previousDropRateMultiplier = 1;
         private static int previousRandomCountMultiplier = 1;
         private static bool previousIsModEnabled = false;
+        private static bool previousRefreshLoot = false;
         
         // 添加ConfigData结构体定义
         [Serializable]
@@ -89,6 +105,7 @@ namespace DropRateSetting
             public int spawnChanceMultiplier;
             public int randomCountMultiplier;
             public bool isModEnabled;
+            public bool refreshLoot;
         }
         
         /// <summary>
@@ -176,22 +193,12 @@ namespace DropRateSetting
             // 注册配置项变更事件
             ModConfigAPI.SafeAddOnOptionsChangedDelegate(OnConfigChanged);
             
-            // 添加启用Mod功能的布尔下拉列表配置项（放在最上面）
+            // 添加即时刷新按钮
             ModConfigAPI.SafeAddBoolDropdownList(
                 MOD_NAME,
-                ENABLE_MOD_KEY,
-                ENABLE_MOD_DESC,
-                IsModEnabled // 使用当前值而不是硬编码默认值
-            );
-            
-            // 添加爆率滑条输入框配置项（在上面）
-            ModConfigAPI.SafeAddInputWithSlider(
-                MOD_NAME,
-                SPAWN_CHANCE_KEY,
-                SPAWN_CHANCE_DESC,
-                typeof(int),
-                DropRateMultiplier, // 使用当前值而不是硬编码默认值
-                new Vector2(1, 200) // 滑条范围
+                REFRESH_LOOT_KEY,
+                REFRESH_LOOT_DESC,
+                false // 默认值为false
             );
             
             // 添加爆出个数滑条输入框配置项（在下面）
@@ -204,14 +211,31 @@ namespace DropRateSetting
                 new Vector2(1, 5) // 滑条范围
             );
             
+            // 添加爆率滑条输入框配置项（在上面）
+            ModConfigAPI.SafeAddInputWithSlider(
+                MOD_NAME,
+                SPAWN_CHANCE_KEY,
+                SPAWN_CHANCE_DESC,
+                typeof(int),
+                DropRateMultiplier, // 使用当前值而不是硬编码默认值
+                new Vector2(1, 200) // 滑条范围
+            );
+            
+            // 添加启用Mod功能的布尔下拉列表配置项（放在最上面）
+            ModConfigAPI.SafeAddBoolDropdownList(
+                MOD_NAME,
+                ENABLE_MOD_KEY,
+                ENABLE_MOD_DESC,
+                IsModEnabled // 使用当前值而不是硬编码默认值
+            );
+            
             isConfigInitialized = true;
             
             // 设置初始值用于比较
             previousDropRateMultiplier = DropRateMultiplier;
             previousRandomCountMultiplier = RandomCountMultiplier;
             previousIsModEnabled = IsModEnabled;
-            
-
+            previousRefreshLoot = RefreshLoot;
         }
         
         /// <summary>
@@ -233,7 +257,7 @@ namespace DropRateSetting
         /// <param name="key">变更的配置项键名</param>
         private void OnConfigChanged(string key)
         {
-            if (key == FULL_SPAWN_CHANCE_KEY || key == FULL_RANDOM_COUNT_KEY || key == FULL_ENABLE_MOD_KEY)
+            if (key == FULL_SPAWN_CHANCE_KEY || key == FULL_RANDOM_COUNT_KEY || key == FULL_ENABLE_MOD_KEY || key == FULL_REFRESH_LOOT_KEY)
             {
 
                 
@@ -242,12 +266,14 @@ namespace DropRateSetting
                 // 只有在值真正发生变化时才保存到本地文件
                 if (DropRateMultiplier != previousDropRateMultiplier || 
                     RandomCountMultiplier != previousRandomCountMultiplier || 
-                    IsModEnabled != previousIsModEnabled)
+                    IsModEnabled != previousIsModEnabled ||
+                    RefreshLoot != previousRefreshLoot)
                 {
                     SaveLocalConfig();
                     previousDropRateMultiplier = DropRateMultiplier;
                     previousRandomCountMultiplier = RandomCountMultiplier;
                     previousIsModEnabled = IsModEnabled;
+                    previousRefreshLoot = RefreshLoot;
                 }
             }
         }
@@ -268,16 +294,19 @@ namespace DropRateSetting
                 DropRateMultiplier = ModConfigAPI.SafeLoad<int>(MOD_NAME, SPAWN_CHANCE_KEY, DropRateMultiplier);
                 RandomCountMultiplier = ModConfigAPI.SafeLoad<int>(MOD_NAME, RANDOM_COUNT_KEY, RandomCountMultiplier);
                 IsModEnabled = ModConfigAPI.SafeLoad<bool>(MOD_NAME, ENABLE_MOD_KEY, IsModEnabled);
+                RefreshLoot = ModConfigAPI.SafeLoad<bool>(MOD_NAME, REFRESH_LOOT_KEY, RefreshLoot);
                 
                 // 如果值发生了变化，保存到本地配置
                 if (DropRateMultiplier != previousSpawnChance || 
                     RandomCountMultiplier != previousRandomCount || 
-                    IsModEnabled != previousEnabled)
+                    IsModEnabled != previousEnabled ||
+                    RefreshLoot != previousRefreshLoot)
                 {
                     SaveLocalConfig();
                     previousDropRateMultiplier = DropRateMultiplier;
                     previousRandomCountMultiplier = RandomCountMultiplier;
                     previousIsModEnabled = IsModEnabled;
+                    previousRefreshLoot = RefreshLoot;
                 }
             }
         }
@@ -299,7 +328,8 @@ namespace DropRateSetting
                 string json = JsonUtility.ToJson(new ConfigData { 
                     spawnChanceMultiplier = DropRateMultiplier,
                     randomCountMultiplier = RandomCountMultiplier,
-                    isModEnabled = IsModEnabled
+                    isModEnabled = IsModEnabled,
+                    refreshLoot = RefreshLoot
                 }, true);
                 File.WriteAllText(persistentConfigPath, json);
             }
@@ -323,6 +353,7 @@ namespace DropRateSetting
                     DropRateMultiplier = configData.spawnChanceMultiplier;
                     RandomCountMultiplier = configData.randomCountMultiplier;
                     IsModEnabled = configData.isModEnabled;
+                    RefreshLoot = configData.refreshLoot;
                 }
                 else
                 {

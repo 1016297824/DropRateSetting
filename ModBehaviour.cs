@@ -32,6 +32,7 @@ namespace DropRateSetting
         private int lastDropRateMultiplier = 1;
         private int lastRandomCountMultiplier = 1;
         private bool lastIsModEnabled = false;
+        private bool lastRefreshLoot = false;
         
         // 添加延迟刷新相关变量
         private bool pendingRespawn = false;
@@ -153,7 +154,8 @@ namespace DropRateSetting
             bool shouldUpdate = 
                 lastDropRateMultiplier != ModConfigDropRateManager.DropRateMultiplier ||
                 lastRandomCountMultiplier != ModConfigDropRateManager.RandomCountMultiplier ||
-                lastIsModEnabled != ModConfigDropRateManager.IsModEnabled;
+                lastIsModEnabled != ModConfigDropRateManager.IsModEnabled ||
+                lastRefreshLoot != ModConfigDropRateManager.RefreshLoot;
                 
             if (shouldUpdate)
             {
@@ -165,6 +167,7 @@ namespace DropRateSetting
                 lastDropRateMultiplier = ModConfigDropRateManager.DropRateMultiplier;
                 lastRandomCountMultiplier = ModConfigDropRateManager.RandomCountMultiplier;
                 lastIsModEnabled = ModConfigDropRateManager.IsModEnabled;
+                lastRefreshLoot = ModConfigDropRateManager.RefreshLoot;
             }
         }
         
@@ -173,7 +176,8 @@ namespace DropRateSetting
         /// </summary>
         private void HandlePendingRespawn()
         {
-            if (pendingRespawn && !isSwitchingScene && !LootSpawnerPatch.IsRespawning() && !LootSpawnerPatch.IsSceneChanging())
+            // 只有当即时刷新按钮为true时才处理延迟刷新
+            if (ModConfigDropRateManager.RefreshLoot && pendingRespawn && !isSwitchingScene && !LootSpawnerPatch.IsRespawning() && !LootSpawnerPatch.IsSceneChanging())
             {
                 respawnTimer += Time.deltaTime;
                 if (respawnTimer >= respawnDelay)
