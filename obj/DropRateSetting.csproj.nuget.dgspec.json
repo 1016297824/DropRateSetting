@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\Workspace\\Rider\\search\\DropRateSetting\\DropRateSetting.csproj": {}
+    "E:\\Workspace\\Rider\\DropRateSetting\\DropRateSetting.csproj": {}
   },
   "projects": {
-    "E:\\Workspace\\Rider\\search\\DropRateSetting\\DropRateSetting.csproj": {
+    "E:\\Workspace\\Rider\\DropRateSetting\\DropRateSetting.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\Workspace\\Rider\\search\\DropRateSetting\\DropRateSetting.csproj",
+        "projectUniqueName": "E:\\Workspace\\Rider\\DropRateSetting\\DropRateSetting.csproj",
         "projectName": "DropRateSetting",
-        "projectPath": "E:\\Workspace\\Rider\\search\\DropRateSetting\\DropRateSetting.csproj",
+        "projectPath": "E:\\Workspace\\Rider\\DropRateSetting\\DropRateSetting.csproj",
         "packagesPath": "C:\\Users\\ZhangKun\\.nuget\\packages\\",
-        "outputPath": "E:\\Workspace\\Rider\\search\\DropRateSetting\\obj\\",
+        "outputPath": "E:\\Workspace\\Rider\\DropRateSetting\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\ZhangKun\\AppData\\Roaming\\NuGet\\NuGet.Config"
