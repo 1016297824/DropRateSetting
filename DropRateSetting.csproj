@@ -15,6 +15,9 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <Reference Include="0Harmony">
+        <HintPath>..\..\DropRateSetting\0Harmony.dll</HintPath>
+      </Reference>
       <Reference Include="netstandard">
         <HintPath>F:\Game\Steam\steamapps\common\Escape from Duckov\Duckov_Data\Managed\netstandard.dll</HintPath>
       </Reference>
@@ -26,9 +29,6 @@
       </Reference>
       <Reference Include="System.Core">
         <HintPath>F:\Game\Steam\steamapps\common\Escape from Duckov\Duckov_Data\Managed\System.Core.dll</HintPath>
-      </Reference>
-      <Reference Include="0Harmony">
-        <HintPath>0Harmony.dll</HintPath>
       </Reference>
       <Reference Include="ALINE">
         <HintPath>F:\Game\Steam\steamapps\common\Escape from Duckov\Duckov_Data\Managed\ALINE.dll</HintPath>
