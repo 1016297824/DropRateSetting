@@ -25,6 +25,7 @@ namespace DropRateSetting
         // 跟踪重新生成操作状态的静态变量
         private static bool isRespawning = false;
         private static int pendingRespawns = 0;
+        private static bool isSceneChanging = false;
         
         /// <summary>
         /// 重新生成当前场景中的所有战利品箱
@@ -35,7 +36,10 @@ namespace DropRateSetting
             try
             {
                 // 如果正在切换场景，则取消本次重新生成操作
-                // 已由ModBehaviour中的isSwitchingScene处理
+                if (isSceneChanging)
+                {
+                    return;
+                }
                 
                 // 设置重新生成操作正在进行的标志
                 isRespawning = true;
@@ -96,6 +100,14 @@ namespace DropRateSetting
                 // 遍历并重新生成每个战利品箱的内容
                 foreach (InteractableLootbox lootBox in lootBoxesInScene)
                 {
+                    // 检查是否在重新生成过程中发生了场景切换
+                    if (isSceneChanging)
+                    {
+                        pendingRespawns = 0;
+                        isRespawning = false;
+                        return;
+                    }
+                    
                     // 处理单个战利品箱的重新生成
                     if (ProcessInteractableLootbox(lootBox, ref spawnedCount, ref unspawnedCount, ref modifiedCount))
                     {
@@ -136,7 +148,11 @@ namespace DropRateSetting
             try
             {
                 // 检查是否在处理过程中发生了场景切换
-                // 已由ModBehaviour中的isSwitchingScene处理
+                if (isSceneChanging)
+                {
+                    pendingRespawns--;
+                    return false;
+                }
                 
                 // 检查是否在基地场景，基地中不处理战利品箱
                 if (LevelManager.Instance != null && LevelManager.Instance.IsBaseLevel)
@@ -291,7 +307,16 @@ namespace DropRateSetting
         {
             return pendingRespawns > 0;
         }
-
+        
+        /// <summary>
+        /// 检查是否正在切换游戏场景
+        /// </summary>
+        /// <returns>正在切换场景返回true，否则返回false</returns>
+        public static bool IsSceneChanging()
+        {
+            return isSceneChanging;
+        }
+        
 
     }
 }

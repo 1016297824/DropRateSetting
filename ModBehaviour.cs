@@ -40,8 +40,7 @@ namespace DropRateSetting
         private float respawnTimer = 0f;
         
         // 添加场景切换相关变量
-        // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-        // private bool isSwitchingScene = false;
+        private bool isSwitchingScene = false;
 
         /// <summary>
         /// 当组件启用时调用
@@ -51,9 +50,8 @@ namespace DropRateSetting
         {
             HarmonyLoad.HarmonyLoad.Load0Harmony();
             // 注册场景切换事件
-            // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-            // SceneManager.sceneLoaded += OnSceneLoaded;
-            // SceneManager.sceneUnloaded += OnSceneUnloaded;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.sceneUnloaded += OnSceneUnloaded;
         }
 
         /// <summary>
@@ -80,22 +78,20 @@ namespace DropRateSetting
         /// <summary>
         /// 场景加载完成时调用
         /// </summary>
-        // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-        // private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        // {
-        //     // 场景加载完成后，重置场景切换标志
-        //     isSwitchingScene = false;
-        // }
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            // 场景加载完成后，重置场景切换标志
+            isSwitchingScene = false;
+        }
 
         /// <summary>
         /// 当场景开始卸载时调用
         /// </summary>
-        // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-        // private void OnSceneUnloaded(Scene scene)
-        // {
-        //     // 标记场景正在切换
-        //     isSwitchingScene = true;
-        // }
+        private void OnSceneUnloaded(Scene scene)
+        {
+            // 标记场景正在切换
+            isSwitchingScene = true;
+        }
 
         /// <summary>
         /// 每帧更新时调用
@@ -108,18 +104,16 @@ namespace DropRateSetting
                 return;
                 
             // 检查是否正在切换场景
-            // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-            // if (isSwitchingScene)
-            //     return;
+            if (isSwitchingScene)
+                return;
                 
             // 检查是否正在进行重新生成操作
             if (LootSpawnerPatch.IsRespawning())
                 return;
                 
             // 检查是否正在切换场景（通过LootSpawnerPatch检查）
-            // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-            // if (LootSpawnerPatch.IsSceneChanging())
-            //     return;
+            if (LootSpawnerPatch.IsSceneChanging())
+                return;
                 
             // 检查LevelConfig.Instance是否可用
             if (LevelConfig.Instance != null)
@@ -183,8 +177,7 @@ namespace DropRateSetting
         private void HandlePendingRespawn()
         {
             // 只有当即时刷新按钮为true时才处理延迟刷新
-            // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-            if (ModConfigDropRateManager.RefreshLoot && pendingRespawn && !LootSpawnerPatch.IsRespawning())
+            if (ModConfigDropRateManager.RefreshLoot && pendingRespawn && !isSwitchingScene && !LootSpawnerPatch.IsRespawning() && !LootSpawnerPatch.IsSceneChanging())
             {
                 respawnTimer += Time.deltaTime;
                 if (respawnTimer >= respawnDelay)
@@ -226,9 +219,8 @@ namespace DropRateSetting
             try
             {
                 // 取消注册场景切换事件
-                // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-                // SceneManager.sceneLoaded -= OnSceneLoaded;
-                // SceneManager.sceneUnloaded -= OnSceneUnloaded;
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+                SceneManager.sceneUnloaded -= OnSceneUnloaded;
                 harmony?.UnpatchAll("DropRateSetting");
             }
             catch
@@ -244,9 +236,8 @@ namespace DropRateSetting
         private void OnDestroy()
         {
             // 取消注册场景切换事件
-            // TODO: 鸭鸭港口冲突测试 - 注释掉此检查以避免与其他场景切换的冲突
-            // SceneManager.sceneLoaded -= OnSceneLoaded;
-            // SceneManager.sceneUnloaded -= OnSceneUnloaded;
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.sceneUnloaded -= OnSceneUnloaded;
             
             if (configManager != null)
             {
